@@ -80,7 +80,7 @@ Do not use local hardware for GPU, RL, benchmark, full integration, end-to-end, 
 
 ## Server Workflow
 
-Formal tests, smoke tests, benchmark runs, RL jobs, GPU workloads, and experiment runs must be done on the server, not locally.
+Formal tests, smoke tests, benchmark runs, RL jobs, GPU workloads, eval scripts, and experiment runs must be done on the server, not locally.
 
 SSH host config:
 
@@ -116,7 +116,7 @@ On the server, keep this repository under:
 
 Use conda on the server as well. The server conda environment is the one used for experiment dependencies, GPU libraries, vLLM, and benchmark/RL execution.
 
-Server jobs that need GPU must be provisioned with Slurm. Before creating or changing an `sbatch` script, read this server template:
+Server jobs must be provisioned with Slurm. GPU workloads should request GPUs; eval scripts that only call an existing API endpoint still need a Slurm allocation, but can be CPU-only and do not need to request GPUs. Before creating or changing an `sbatch` script, read this server template:
 
 ```bash
 ssh jump.pjlab.org.cn 'sed -n "1,240p" ~/slurm_scripts_template/sbatch_template.sh'
