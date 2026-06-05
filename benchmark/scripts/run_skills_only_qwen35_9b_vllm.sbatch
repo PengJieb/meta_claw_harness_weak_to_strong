@@ -25,6 +25,8 @@ set -eo pipefail
 
 export METACLAW_ROOT="${METACLAW_ROOT:-$HOME/MetaClaw}"
 export METACLAW_CONDA_ENV="${METACLAW_CONDA_ENV:-metaclaw}"
+export METACLAW_NODE_VERSION="${METACLAW_NODE_VERSION:-22.19.0}"
+export METACLAW_NODE_HOME="${METACLAW_NODE_HOME:-$HOME/.cache/metaclaw-node/node-v${METACLAW_NODE_VERSION}-linux-x64-glibc-217}"
 export VLLM_MODEL_PATH="${VLLM_MODEL_PATH:-$HOME/XSkill/model/Qwen3.5-9B}"
 export VLLM_MODEL_NAME="${VLLM_MODEL_NAME:-Qwen3.5-9B}"
 export VLLM_SIF_PATH="${VLLM_SIF_PATH:-$HOME/XSkill/model/vllm-openai-v0.21.0-cu129.sif}"
@@ -54,6 +56,7 @@ echo "[job] host=$(hostname)"
 echo "[job] time=$(date '+%Y-%m-%d %H:%M:%S')"
 echo "[job] METACLAW_ROOT=$METACLAW_ROOT"
 echo "[job] METACLAW_CONDA_ENV=$METACLAW_CONDA_ENV"
+echo "[job] METACLAW_NODE_HOME=$METACLAW_NODE_HOME"
 echo "[job] VLLM_MODEL_PATH=$VLLM_MODEL_PATH"
 echo "[job] VLLM_MODEL_NAME=$VLLM_MODEL_NAME"
 echo "[job] VLLM_SIF_PATH=$VLLM_SIF_PATH"
@@ -82,9 +85,8 @@ if [[ ! -d "$METACLAW_SKILLS_DIR" ]]; then
   exit 2
 fi
 
-if [[ -f "$HOME/.bashrc" ]]; then
-  # shellcheck disable=SC1090
-  source "$HOME/.bashrc" || true
+if [[ -x "$METACLAW_NODE_HOME/bin/node" ]]; then
+  export PATH="$METACLAW_NODE_HOME/bin:$PATH"
 fi
 export no_proxy="${no_proxy:+$no_proxy,}127.0.0.1,localhost,0.0.0.0"
 export NO_PROXY="${NO_PROXY:+$NO_PROXY,}127.0.0.1,localhost,0.0.0.0"
@@ -106,6 +108,37 @@ else
   echo "[job] ERROR: conda not found; set up conda before submitting." >&2
   exit 2
 fi
+
+find_openclaw_bin() {
+  local candidate
+  for candidate in \
+    "${OPENCLAW_BIN:-}" \
+    "$METACLAW_NODE_HOME/bin/openclaw" \
+    "$(command -v openclaw 2>/dev/null || true)" \
+    "$HOME/.local/bin/openclaw" \
+    "$HOME/.npm-global/bin/openclaw"
+  do
+    if [[ -n "$candidate" && -x "$candidate" && ! -d "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if ! OPENCLAW_BIN="$(find_openclaw_bin)"; then
+  echo "[job] ERROR: openclaw executable not found." >&2
+  echo "[job] Checked OPENCLAW_BIN, METACLAW_NODE_HOME/bin/openclaw, PATH, ~/.local/bin, and ~/.npm-global/bin." >&2
+  echo "[job] If installation needs network, open an interactive server shell, run proxy_on, install OpenClaw, then resubmit." >&2
+  exit 2
+fi
+export OPENCLAW_BIN
+echo "[job] OPENCLAW_BIN=$OPENCLAW_BIN"
+"$OPENCLAW_BIN" --version || {
+  echo "[job] ERROR: OPENCLAW_BIN failed --version: $OPENCLAW_BIN" >&2
+  ls -l "$OPENCLAW_BIN" >&2 || true
+  exit 2
+}
 
 python - <<'PY'
 import importlib.util

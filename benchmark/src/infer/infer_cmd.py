@@ -43,6 +43,11 @@ from src.utils import get_project_root, resolve_path
 # ---------------------------------------------------------------------------
 
 
+def _openclaw_bin() -> str:
+    """Return the OpenClaw executable configured for this run."""
+    return os.environ.get("OPENCLAW_BIN", "openclaw")
+
+
 def _find_all_tests_files(input_path: Path) -> list[Path]:
     """Return a list of all_tests.json files to process."""
     if input_path.is_file():
@@ -327,7 +332,7 @@ async def _start_work_gateway(
     # to it after Python closes the parent's handle at the end of the with-block.
     with open(log_path, "w", encoding="utf-8") as log_fh:
         proc = await asyncio.create_subprocess_exec(
-            "openclaw", "gateway", "run",
+            _openclaw_bin(), "gateway", "run",
             "--port", str(port),
             "--allow-unconfigured",
             env=env,
@@ -395,7 +400,7 @@ async def _run_openclaw_agent(
     if gateway_port is not None:
         env["OPENCLAW_GATEWAY_PORT"] = str(gateway_port)
     proc = await asyncio.create_subprocess_exec(
-        "openclaw", "agent",
+        _openclaw_bin(), "agent",
         "--session-id", session_id,
         "--message", message,
         cwd=str(project_root),
