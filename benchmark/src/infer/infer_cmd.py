@@ -335,6 +335,7 @@ async def _start_work_gateway(
             _openclaw_bin(), "gateway", "run",
             "--port", str(port),
             "--allow-unconfigured",
+            "--auth", "none",
             env=env,
             stdout=log_fh,
             stderr=log_fh,

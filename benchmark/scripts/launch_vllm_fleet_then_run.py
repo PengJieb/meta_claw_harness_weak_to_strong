@@ -155,6 +155,10 @@ def _terminate_process_group(proc: subprocess.Popen, label: str) -> None:
         proc.wait()
 
 
+def _raise_for_signal(signum: int, _frame: object) -> None:
+    raise KeyboardInterrupt(f"received signal {signum}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Launch a vLLM replica fleet, batch-router, then run a command.")
     parser.add_argument("--model-path", default=os.environ.get("VLLM_MODEL_PATH", "~/XSkill/model/Qwen3.5-9B"))
@@ -222,6 +226,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    signal.signal(signal.SIGTERM, _raise_for_signal)
+    signal.signal(signal.SIGINT, _raise_for_signal)
     _localhost_no_proxy()
     os.environ.setdefault("NCCL_DEBUG", "WARN")
     os.environ.setdefault("NCCL_SOCKET_IFNAME", "bond0")
