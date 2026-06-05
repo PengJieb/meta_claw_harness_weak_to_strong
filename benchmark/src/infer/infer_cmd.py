@@ -353,7 +353,7 @@ def _read_gateway_log(log_path: Path, max_bytes: int = 8192) -> str:
         return ""
 
 
-async def _wait_for_gateway(port: int, timeout: float = 10.0) -> bool:
+async def _wait_for_gateway(port: int, timeout: float = 60.0) -> bool:
     """Poll until the gateway's TCP port accepts connections (or timeout)."""
     deadline = asyncio.get_event_loop().time() + timeout
     while asyncio.get_event_loop().time() < deadline:

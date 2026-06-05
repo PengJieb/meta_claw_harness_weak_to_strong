@@ -258,6 +258,7 @@ def main():
     bench_env["METACLAW_PROXY_PORT"] = str(port)
 
     start = datetime.now()
+    exit_code = 0
     try:
         run_cmd = [
             cfg.BENCH_BIN, "run",
@@ -266,7 +267,7 @@ def main():
             "-w", "1",
             "-n", str(cfg.BENCH_COUNT),
         ]
-        run_command(run_cmd, log_path, env=bench_env)
+        exit_code = run_command(run_cmd, log_path, env=bench_env)
 
     finally:
         stop_proxy(proxy_proc)
@@ -279,6 +280,8 @@ def main():
 
     end = datetime.now()
     append_timing(log_path, start, end)
+    if exit_code:
+        raise SystemExit(exit_code)
 
 
 if __name__ == "__main__":
