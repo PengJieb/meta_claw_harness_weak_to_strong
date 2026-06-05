@@ -21,7 +21,7 @@
 #SBATCH --gres=gpu:8
 #SBATCH --quotatype=reserved
 
-set -euo pipefail
+set -eo pipefail
 
 export METACLAW_ROOT="${METACLAW_ROOT:-$HOME/MetaClaw}"
 export METACLAW_CONDA_ENV="${METACLAW_CONDA_ENV:-metaclaw}"
@@ -84,9 +84,7 @@ fi
 
 if [[ -f "$HOME/.bashrc" ]]; then
   # shellcheck disable=SC1090
-  set +u
   source "$HOME/.bashrc" || true
-  set -u
 fi
 export no_proxy="${no_proxy:+$no_proxy,}127.0.0.1,localhost,0.0.0.0"
 export NO_PROXY="${NO_PROXY:+$NO_PROXY,}127.0.0.1,localhost,0.0.0.0"
