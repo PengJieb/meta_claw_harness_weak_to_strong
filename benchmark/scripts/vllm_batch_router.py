@@ -258,6 +258,11 @@ def create_app(args: argparse.Namespace) -> Any:
     from fastapi import FastAPI, HTTPException, Request
     from fastapi.responses import JSONResponse
 
+    # Endpoint annotations are postponed by ``from __future__ import annotations``.
+    # Expose FastAPI's Request globally so FastAPI can resolve ``request: Request``
+    # as the framework request object instead of treating it as user input.
+    globals()["Request"] = Request
+
     router = BatchRouter(
         backends=_parse_backends(args.backend),
         batch_window=args.batch_window,
