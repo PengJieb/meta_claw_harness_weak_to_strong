@@ -155,6 +155,10 @@ def _prepare_work_copy(
         sessions_cfg = tools_cfg.setdefault("sessions", {})
         sessions_cfg.setdefault("visibility", "agent")
 
+        gateway_cfg = config.setdefault("gateway", {})
+        auth_cfg = gateway_cfg.setdefault("auth", {})
+        auth_cfg["mode"] = "none"
+
         openclaw_json_path.write_text(
             json.dumps(config, ensure_ascii=False, indent=2),
             encoding="utf-8",
