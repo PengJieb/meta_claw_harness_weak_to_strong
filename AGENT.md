@@ -150,8 +150,28 @@ For higher-throughput benchmark runs, use the eight-replica vLLM router:
 - Router script: `benchmark/scripts/vllm_batch_router.py`
 - Fleet launcher: `benchmark/scripts/launch_vllm_fleet_then_run.py`
 - Slurm entrypoint: `benchmark/scripts/run_skills_only_qwen35_9b_vllm_fleet.sbatch`
+- Manual `salloc` start script: `benchmark/scripts/start_qwen35_9b_vllm_fleet.sh`
+- Manual stop script: `benchmark/scripts/stop_qwen35_9b_vllm_fleet.sh`
 
 The fleet launcher starts one vLLM server per GPU with `CUDA_VISIBLE_DEVICES` pinned per process, waits for all `/health` endpoints, starts a local OpenAI-compatible batching router, and runs the benchmark with `BENCHMARK_BASE_URL=http://127.0.0.1:${VLLM_ROUTER_PORT}/v1`. The router batches non-streaming requests for `VLLM_ROUTER_BATCH_WINDOW` seconds, then fans them out across the vLLM replicas. It intentionally rejects `stream=true` because streaming responses cannot be safely held and batch-dispatched. The Slurm script generates two per-job API keys by default: `VLLM_BACKEND_API_KEY` for wrapper-to-vLLM calls and `VLLM_ROUTER_API_KEY` for MetaClaw-to-wrapper calls. Do not use `EMPTY` for fleet runs; logs are created under `umask 077`.
+
+When GPU quota is scarce, prefer manually holding the GPU allocation with `salloc`, then starting/stopping the vLLM fleet yourself:
+
+```bash
+salloc -p moe_p --quotatype=reserved -N 1 --gres=gpu:8 -c 64 --mem=512G -t 08:00:00
+srun --pty bash
+cd ~/MetaClaw
+bash benchmark/scripts/start_qwen35_9b_vllm_fleet.sh
+```
+
+Keep that allocation and shell alive while benchmark/eval clients call the printed router URL. The manual start path binds the router on `0.0.0.0` by default so CPU-only Slurm jobs can call `http://<gpu-node-ip>:19000/v1`; the individual vLLM replicas remain bound to `127.0.0.1` on the GPU node. The start script writes a `0600` state file under `benchmark/logs/vllm_fleet/` containing PIDs, logs, URL, and generated API keys. Run this before releasing the allocation:
+
+```bash
+cd ~/MetaClaw
+bash benchmark/scripts/stop_qwen35_9b_vllm_fleet.sh
+```
+
+Eval scripts that only call this router should still be launched by Slurm, but can use CPU-only allocations. Set `BENCHMARK_BASE_URL`, `BENCHMARK_API_KEY`, and `BENCHMARK_MODEL` from the manual start script output or the fleet state file.
 
 If the server cannot access the network, run the `proxy_on` alias from the server `~/.bashrc` before installing dependencies, pulling packages, or accessing remote model/API resources.
 
