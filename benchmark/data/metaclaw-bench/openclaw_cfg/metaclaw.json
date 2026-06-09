@@ -23,7 +23,7 @@
               "cacheWrite": 0
             },
             "contextWindow": 50000,
-            "maxTokens": 50000
+            "maxTokens": 40000
           }
         ]
       }
